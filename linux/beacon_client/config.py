@@ -56,6 +56,7 @@ class Config:
     device: str
     gpio: int
     active_high: bool
+    led: str                 # "" = drive the GPIO; "ACT" / "PWR" = that onboard LED instead
     pattern: str
     stale_secs: int
     patterns: dict
@@ -147,6 +148,11 @@ def load(path=None, require_password=True):
     if not isinstance(gpio, int) or isinstance(gpio, bool) or not 0 <= gpio <= 27:
         raise ConfigError("[device] gpio must be a BCM number 0..27")
 
+    led = str(dev.get("led", "")).strip()
+    if led and (len(led) > 32 or not all(c.isalnum() or c in "-_:" for c in led)):
+        raise ConfigError("[device] led must be an onboard LED name such as \"ACT\" or \"PWR\" "
+                          "(a directory under /sys/class/leds), or empty for the GPIO")
+
     return Config(
         mqtt_host=str(mqtt.get("host", "192.0.2.10")),
         mqtt_port=int(mqtt.get("port", 1883)),
@@ -156,6 +162,7 @@ def load(path=None, require_password=True):
         device=device,
         gpio=gpio,
         active_high=bool(dev.get("active_high", True)),
+        led=led,
         pattern=pattern,
         stale_secs=int(dev.get("stale_secs", 300)),
         patterns=patterns,

@@ -224,3 +224,58 @@ class Packets(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SysfsOutput(unittest.TestCase):
+    """SysfsLED against a fake /sys/class/leds tree in a temp dir."""
+
+    def _tree(self, trigger="none timer [mmc0]", maxb="255"):
+        root = tempfile.mkdtemp()
+        d = os.path.join(root, "ACT")
+        os.makedirs(d)
+        for name, val in (("brightness", "1"), ("trigger", trigger), ("max_brightness", maxb)):
+            with open(os.path.join(d, name), "w") as fh:
+                fh.write(val + "\n")
+        return root
+
+    def _read(self, root, name):
+        with open(os.path.join(root, "ACT", name)) as fh:
+            return fh.read().strip()
+
+    def test_open_takes_over_on_off_close_restores(self):
+        from beacon_client.led import SysfsLED
+        root = self._tree()
+        led = SysfsLED("ACT", root=root)
+        self.assertEqual(self._read(root, "trigger"), "none")
+        self.assertEqual(self._read(root, "brightness"), "0")
+        led.on()
+        self.assertEqual(self._read(root, "brightness"), "255")
+        led.off()
+        self.assertEqual(self._read(root, "brightness"), "0")
+        led.close()
+        self.assertEqual(self._read(root, "trigger"), "mmc0")
+
+    def test_missing_led_and_unwritable_are_errors(self):
+        from beacon_client.led import SysfsLED
+        root = self._tree()
+        with self.assertRaises(RuntimeError):
+            SysfsLED("PWR", root=root)
+        os.chmod(os.path.join(root, "ACT", "brightness"), 0o444)
+        if os.geteuid() != 0:
+            with self.assertRaises(RuntimeError):
+                SysfsLED("ACT", root=root)
+
+    def test_config_led_key(self):
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "device.toml")
+        with open(path, "w") as fh:
+            fh.write('[device]\nname = "t"\nled = "ACT"\n')
+        cfg = config.load(path, require_password=False)
+        self.assertEqual(cfg.led, "ACT")
+        with open(path, "w") as fh:
+            fh.write('[device]\nname = "t"\nled = "../etc"\n')
+        with self.assertRaises(config.ConfigError):
+            config.load(path, require_password=False)
+        with open(path, "w") as fh:
+            fh.write('[device]\nname = "t"\n')
+        self.assertEqual(config.load(path, require_password=False).led, "")

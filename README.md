@@ -185,6 +185,7 @@ QoS 1, PUBACK, PINGREQ at half the keepalive, reconnect forever with 1 s -> 60 s
 | `[mqtt] keepalive_secs` | 60 | MQTT keepalive; broker silent for 1.5x => reconnect |
 | `[device] name` | none | `[a-z0-9-]{1,32}`; second topic is `beacon/<name>/trigger` |
 | `[device] gpio, active_high` | 26, true | BCM pin; `false` for an LED wired to 3V3 |
+| `[device] led` | `""` | chunk 7: `"ACT"` or `"PWR"` drives that onboard LED instead of the GPIO |
 | `[device] pattern` | `blink` | which pattern a trigger plays |
 | `[device] stale_secs` | 300 | the `ts` rule from chunk 1, see below |
 | `[patterns] <name>` | three built in | `{ steps = [[on_ms, off_ms], ...], repeat = N }` |
@@ -205,6 +206,23 @@ Built-in patterns: `blink` (250/250 x12, 6 s), `double` (120/120, 120/700 x6), `
 - **Acknowledge is a stub.** The pattern ending *is* the acknowledge; the hook is
   `acknowledge()` in `linux/beacon_client/patterns.py`, called once when a pattern runs to
   its end, with a comment on what the real model needs (and the ACL line it will want).
+
+### Chunk 7 — onboard LED, no wiring
+
+`[device] led = "ACT"` makes the client blink the Pi's green activity LED (or `"PWR"`,
+the red one) through `/sys/class/leds/<name>` instead of a GPIO pin. While the client
+runs, that LED's kernel trigger is set to `none`, so ACT stops showing SD-card activity;
+the previous trigger is restored when the client stops. `brightness` and `trigger` are
+root-only by default, so one udev rule hands them to the gpio group at boot:
+
+```bash
+sudo install -m644 ~/beacon/linux/deploy/99-beacon-leds.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=leds
+ls -l /sys/class/leds/ACT/brightness      # expect root gpio, group-writable
+```
+
+No sudo after that. If the rule is missing the client refuses to start with a line naming
+the file. `--test-fire` works the same way: `python3 -m beacon_client --test-fire`.
 
 ### Install on pi (as sky; sudo only for the last line)
 

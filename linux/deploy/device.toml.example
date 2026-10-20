@@ -16,6 +16,9 @@ keepalive_secs = 60
 name = "pi"        # subscribes to beacon/all/trigger and beacon/<name>/trigger
 gpio = 26                # BCM number; 26 is physical pin 37
 active_high = true       # LED + series resistor from the pin to ground (pin 39)
+led = ""                 # "" drives the GPIO above. "ACT" (green) or "PWR" (red) drives
+                         # that onboard LED instead, no wiring; needs the udev rule
+                         # linux/deploy/99-beacon-leds.rules installed once (chunk 7)
 pattern = "blink"        # the [patterns] entry a trigger plays
 stale_secs = 300         # drop a trigger whose ts is older than this (README rule)
 

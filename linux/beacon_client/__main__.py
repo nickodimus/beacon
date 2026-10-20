@@ -8,7 +8,7 @@ import sys
 import threading
 
 from . import client, config, patterns
-from .led import open_led
+from .led import describe, open_output
 
 
 def _setup_logging():
@@ -37,9 +37,9 @@ def main(argv=None):
         return 2
 
     try:
-        led = open_led(cfg.gpio, cfg.active_high)
+        led = open_output(cfg)
     except Exception as exc:  # gpiozero raises its own family; all are fatal here
-        log.error("cannot open GPIO %d: %s", cfg.gpio, exc)
+        log.error("cannot open %s: %s", describe(cfg), exc)
         return 1
 
     if args.test_fire:
@@ -49,8 +49,8 @@ def main(argv=None):
             led.close()
             return 2
         pat = cfg.patterns[name]
-        log.info("test fire: pattern=%s gpio=%d active_high=%s duration=%.1fs",
-                 name, cfg.gpio, cfg.active_high, pat.duration_ms / 1000)
+        log.info("test fire: pattern=%s output=%s duration=%.1fs",
+                 name, describe(cfg), pat.duration_ms / 1000)
         try:
             patterns.run_pattern(led, pat, threading.Event())
         finally:
@@ -63,8 +63,8 @@ def main(argv=None):
     signal.signal(signal.SIGTERM, _term)
 
     player = patterns.Player(led).start()
-    log.info("beacon client for device=%s gpio=%d pattern=%s stale=%ds",
-             cfg.device, cfg.gpio, cfg.pattern, cfg.stale_secs)
+    log.info("beacon client for device=%s output=%s pattern=%s stale=%ds",
+             cfg.device, describe(cfg), cfg.pattern, cfg.stale_secs)
     try:
         client.run(cfg, player)
     except (KeyboardInterrupt, SystemExit):
