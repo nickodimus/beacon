@@ -18,8 +18,9 @@ Tasker 6.6.20 (Play, 2026-02-24). Menu names below are from those sources, not m
 
 One macro: Trigger → Action → two settings.
 
-1. **Trigger**: *Notification* → Trigger Event **Notification Received** → **Select
-   Applications** → tick Signal (Include). Text filter **Any text**. Tick **Ignore
+1. **Trigger**: *Device Events* → *Notification* (or tap the search icon and type
+   "notification"; MacroDroid 6.0.11 on Android 16, verified 2026-10-20) → **Notification
+   Received** → the Applications grid button → search "signal", tick Signal (Include), OK. Text filter **Any text**. Tick **Ignore
    ongoing/persistent notifications** (Signal's "background connection" notice is one).
    Leave **Prevent multiple triggers** on (default). MacroDroid asks for Notification
    Access the first time; grant it.
