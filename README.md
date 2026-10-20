@@ -16,6 +16,8 @@ Flow: phone automation app -> HTTPS POST with bearer to <api-host>/beacon/trigge
 3. `flasher/` — Tkinter GUI: board detection, firmware stage (esptool / UF2 copy), app upload,
    provisioning (WiFi, MQTT user/pass, token).
 4. `docs/` — phone recipe: [docs/phone.md](docs/phone.md) (MacroDroid first, Tasker alternative), backlog.
+5. `linux/` — pi interim client: stdlib MQTT subscriber + gpiozero LED on GPIO 26,
+   pattern engine, `--test-fire`, systemd user unit. Proof of the whole path before a board exists.
 
 ## Chunk 1 — hub side
 
@@ -149,6 +151,91 @@ naming the topic; with `--mqtt`, that the trigger reached a `mosquitto_sub` star
 the fire. 429 and 502 are not in the smoke (they need a full window / a dead broker);
 both were exercised by hand on 2026-10-19.
 
+## Chunk 5 — pi interim client
+
+A Linux "device" so the path phone -> hub -> LED is visible before the MicroPython
+board (chunk 2) exists. pi (Pi 3B+, Debian 13, Python 3.13) sits in the studio;
+an LED with a series resistor runs from GPIO 26 (physical pin 37) to ground (pin 39),
+active-high. Nothing else on the header moves; `amphour.service` keeps /dev/ttyUSB0 and
+the BME280 on GPIO 2/3.
+
+Stdlib only plus gpiozero (lgpio backend, both in Debian). The MQTT code is
+`tools/watch.py` lifted into a module, not paho: CONNECT with the `beacon-dev` login,
+clean session, one SUBSCRIBE for `beacon/all/trigger` and `beacon/<name>/trigger` at
+QoS 1, PUBACK, PINGREQ at half the keepalive, reconnect forever with 1 s -> 60 s backoff.
+
+### Layout
+
+    linux/beacon_client/   config (device.toml), mqtt (3.1.1 subscriber), patterns
+                           (engine + Player thread + acknowledge stub), led (gpiozero),
+                           client (classify + run loop), __main__ (--test-fire)
+    linux/deploy/          beacon-client.service (user unit), device.toml.example
+    tests/test_linux_client.py   stdlib unittest; fake LED, MQTT over a socketpair
+
+### Config: `~/.config/beacon/device.toml` (chmod 600; `BEACON_DEVICE_CONFIG` overrides)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `[mqtt] host, port, user` | `192.0.2.10`, `1883`, `beacon-dev` | the LAN listener and the device login |
+| `[mqtt] password_file` / `password` | none | the file wins. **Neither set => refuses to start (fails closed).** |
+| `[mqtt] keepalive_secs` | 60 | MQTT keepalive; broker silent for 1.5x => reconnect |
+| `[device] name` | none | `[a-z0-9-]{1,32}`; second topic is `beacon/<name>/trigger` |
+| `[device] gpio, active_high` | 26, true | BCM pin; `false` for an LED wired to 3V3 |
+| `[device] pattern` | `blink` | which pattern a trigger plays |
+| `[device] stale_secs` | 300 | the `ts` rule from chunk 1, see below |
+| `[patterns] <name>` | three built in | `{ steps = [[on_ms, off_ms], ...], repeat = N }` |
+
+Built-in patterns: `blink` (250/250 x12, 6 s), `double` (120/120, 120/700 x6), `slow`
+(1500/1500 x3). A config entry with the same name overrides; a new name adds.
+
+### Behaviour
+
+- A trigger plays the configured pattern. A second trigger mid-pattern **restarts** it
+  (logged as `pattern blink restarted`); nothing queues.
+- `ts` rule from chunk 1: with a set clock, `now - ts > stale_secs` => dropped and logged
+  as `dropped stale`. Clock before 2023-11-14 (Pi has no RTC, NTP not yet) => fire anyway.
+  A PUBLISH with the retain flag => `dropped retained`, whatever its age: the service
+  never retains, so one means a broker policy changed under us.
+- One log line per trigger: `trigger topic=beacon/all/trigger source=signal age=0s
+  pattern=blink`. The password sits in a `repr=False` field and is never in exception text.
+- **Acknowledge is a stub.** The pattern ending *is* the acknowledge; the hook is
+  `acknowledge()` in `linux/beacon_client/patterns.py`, called once when a pattern runs to
+  its end, with a comment on what the real model needs (and the ACL line it will want).
+
+### Install on pi (as sky; sudo only for the last line)
+
+```bash
+# code: pi has no key to hub, so the branch is pushed from workstation
+#   on pi once:  git init ~/beacon && git -C ~/beacon config receive.denyCurrentBranch updateInstead
+#   from workstation:        git push pi:beacon chunk-5-pi && ssh pi git -C beacon checkout chunk-5-pi
+install -d -m700 ~/.config/beacon
+install -m600 ~/beacon/linux/deploy/device.toml.example ~/.config/beacon/device.toml
+# the beacon-dev password: scp'd from workstation into ~/.config/beacon/device.pw (600), never typed or echoed
+cd ~/beacon/linux && python3 -m beacon_client --test-fire            # LED blinks, no broker
+systemctl --user enable --now ~/beacon/linux/deploy/beacon-client.service
+journalctl --user-unit=beacon-client -f     # not "--user -u": pi's journal is volatile and not split per user
+sudo loginctl enable-linger USER     # without this the user unit stops when the last ssh session ends
+```
+
+The unit is a **user** unit (`~/.config/systemd/user`, `WantedBy=default.target`) so
+everything up to lingering is sky's own. `PrivateDevices` is deliberately absent: the
+client needs `/dev/gpiochip0` (group `gpio`).
+
+### Test fire and proof
+
+`python3 -m beacon_client --test-fire [--pattern slow]` opens the pin, plays the pattern
+once and exits; no password needed, no broker involved. Then, with the unit up, the
+chunk 1 curl from workstation:
+
+```bash
+curl -s -w ' %{http_code}\n' -H "Authorization: Bearer $(cat ~/.config/beacon/api.token)" -H 'content-type: application/json' -d '{"source":"signal"}' https://<api-host>/beacon/trigger
+```
+
+Expected on pi (`journalctl --user-unit=beacon-client`):
+`INFO beacon.client: trigger topic=beacon/all/trigger source=signal age=0s pattern=blink`
+and the LED runs the pattern. `-d '{"source":"signal","device":"pi"}'` proves the
+per-device topic the same way. Both were run 2026-10-19 (ages 1 s and 0 s).
+
 ## Backlog
 
 - Acknowledge model (timeout vs physical button vs phone clear). Stubbed in chunk 2.
@@ -164,6 +251,12 @@ both were exercised by hand on 2026-10-19.
 - Device login `beacon-dev` has no write access; add a status/ack topic when chunk 2 needs it.
 - No TLS on the LAN listener: the device password crosses the home WiFi in clear.
 - `/var/log/mosquitto/mosquitto.log` is root-only; the smoke cannot read broker logs.
+- pi client: no TLS, same as every device. Lingering for the user unit needs one sudo
+  line; a system unit with `User=USER` is the alternative if lingering is unwanted.
+- pi client: patterns from the config are fixed at start; a config change needs a
+  restart. A SIGHUP reload or the Microdot-style web UI is chunk 2 territory.
+- pi client: `--test-fire` and the running unit cannot share the pin; stop the unit first.
+- pi: journald is volatile (`/run/log/journal`), so the client log does not survive a reboot.
 - hub: `<api-host>.service` runs as root (known). `systemd-analyze verify` also
   flags three stale `*.service_BAK` drop-ins under `multi-user.target.wants`.
 
