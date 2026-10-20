@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=beacon fire
+Comment=Fire the beacon trigger (no terminal)
+Exec=python3 /home/USER/beacon/tools/fire_gui.py
+Icon=preferences-system-notifications
+Terminal=false
+Categories=Utility;
