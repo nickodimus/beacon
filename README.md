@@ -75,6 +75,10 @@ Fail-closed posture, same as mailroom:
                         beacon.acl, beacon.passwd.example, apache-beacon.conf
     tests/smoke.py      stdlib-only; --mqtt starts mosquitto_sub first and checks arrival
     tools/watch.py      stdlib-only MQTT subscriber for workstation (no mosquitto_sub or paho there)
+    tools/fire_gui.py   tkinter window with one FIRE button: posts the trigger with the token
+                        from ~/.config/beacon/api.token, shows status and a log, never the token
+    tools/beacon-fire.desktop, tools/install-fire-gui.sh
+                        app-menu entry "beacon fire" for workstation; install once with the script
 
 Config lives at `~/.config/beacon/config.toml` on hub (sky-owned, chmod 600;
 `BEACON_CONFIG` overrides). mailroom and charity use `/etc/<name>/`; beacon differs so
