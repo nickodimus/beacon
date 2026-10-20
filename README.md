@@ -15,7 +15,7 @@ Flow: phone automation app -> HTTPS POST with bearer to <api-host>/beacon/trigge
    pattern engine, NeoPixel driver, test-fire button, acknowledge stub, config.json.
 3. `flasher/` — Tkinter GUI: board detection, firmware stage (esptool / UF2 copy), app upload,
    provisioning (WiFi, MQTT user/pass, token).
-4. `docs/` — phone recipe (MacroDroid/Tasker), backlog.
+4. `docs/` — phone recipe: [docs/phone.md](docs/phone.md) (MacroDroid first, Tasker alternative), backlog.
 
 ## Chunk 1 — hub side
 
