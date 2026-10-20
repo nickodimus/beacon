@@ -1,0 +1,6 @@
+notes/*
+!notes/prompts/
+.venv/
+__pycache__/
+*.pyc
+config.toml
