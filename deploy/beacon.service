@@ -1,0 +1,35 @@
+[Unit]
+Description=beacon — visual message notifier trigger API (phone -> MQTT)
+Documentation=file:/home/USER/beacon/README.md
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=USER
+Group=USER
+WorkingDirectory=/home/USER/beacon/hub
+ExecStart=/home/USER/beacon/hub/.venv/bin/python -m beacon.serve
+Restart=always
+RestartSec=10
+TimeoutStopSec=15
+LogNamespace=beacon
+
+# Hardening — mirrors mailroom. beacon writes nothing to disk (it logs to
+# journald and talks to mosquitto on loopback). Its config lives under
+# /home/USER/.config/beacon, which ProtectHome=read-only still lets it read.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

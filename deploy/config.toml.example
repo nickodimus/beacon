@@ -1,0 +1,25 @@
+# beacon config — copy to ~/.config/beacon/config.toml on hub, chmod 600,
+# owned by sky (the service runs as sky). BEACON_CONFIG overrides the path.
+# Both secrets below are set by hand on the box. Never commit a filled-in
+# copy of this file, and never let either value reach a log line.
+
+[api]
+# Generate once with:  openssl rand -hex 32
+# The phone sends this as "Authorization: Bearer <token>".
+# Empty token => every trigger is refused with 503 (fails closed).
+api_token = ""
+bind_host = "127.0.0.1"     # loopback only; Apache is the only caller
+bind_port = 8012
+
+[mqtt]
+# The service's OWN broker login, separate from the device login.
+# user  = the "beacon-svc" entry in /etc/mosquitto/beacon.passwd
+# password = whatever was typed into:  sudo mosquitto_passwd /etc/mosquitto/beacon.passwd beacon-svc
+host = "127.0.0.1"
+port = 1883
+user = "beacon-svc"
+password = ""
+
+[limits]
+max_per_min = 12        # enforced per-process ceiling; excess => 429
+mqtt_timeout_secs = 5   # connect / CONNACK / PUBACK wait; beyond => 502

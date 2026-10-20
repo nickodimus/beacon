@@ -1,0 +1,15 @@
+# /etc/mosquitto/beacon.acl
+#
+# No topic lines before the first "user" on purpose: a line up here would
+# apply to every client, anonymous included.
+
+# The hub service. Publishes triggers, reads nothing.
+user beacon-svc
+topic write beacon/#
+
+# Shared login provisioned onto every device (chunk 3). Subscribe only:
+# a device can see beacon/all/trigger and beacon/<name>/trigger, and cannot
+# fire another device. If chunk 2 needs an ack/status topic, add a
+# `topic write beacon/+/status` style line here then, not before.
+user beacon-dev
+topic read beacon/#
