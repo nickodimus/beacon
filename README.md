@@ -281,6 +281,19 @@ per-device topic the same way. Both were run 2026-10-19 (ages 1 s and 0 s).
 - pi: journald is volatile (`/run/log/journal`), so the client log does not survive a reboot.
 - hub: `<api-host>.service` runs as root (known). `systemd-analyze verify` also
   flags three stale `*.service_BAK` drop-ins under `multi-user.target.wants`.
+- From the 2026-10-20 recon (notes/recon-accessible-notifiers-2026-10-20.md, gitignored):
+  - Flash-rate safety: keep every pattern at or under 2 Hz (fire strobes 1-2 Hz, WCAG
+    cap 3/s, Epilepsy Foundation flags 3-60 Hz). The built-in `double` pattern
+    (120/120 ms) touches ~4 Hz; re-time it. Never flash the red PWR LED alone.
+  - Acknowledge model, informed by the field: sticky-until-cleared, a physical button
+    that publishes an MQTT clear, plus a timeout failsafe. Needs a `write
+    beacon/+/status` ACL line on hub.
+  - Heartbeat / offline indicator: people with hearing loss warn about silent failure.
+    A device last-will on mosquitto and a visible "beacon down" state.
+  - Always restore a lamp or ring to its prior state after a pattern (the Yeelight
+    recipe's bug is the warning).
+  - Placement and limits: high on a light-colored wall, one flasher per room; light does
+    not wake a sleeper, a bed shaker is the standard answer for that.
 
 ## Layout
 
