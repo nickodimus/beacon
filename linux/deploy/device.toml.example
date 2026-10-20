@@ -1,0 +1,28 @@
+# beacon Linux client config — copy to ~/.config/beacon/device.toml on the
+# device, chmod 600. BEACON_DEVICE_CONFIG overrides the path.
+# Never commit a filled-in copy; the password never reaches a log line.
+
+[mqtt]
+host = "192.0.2.10"
+port = 1883
+user = "beacon-dev"
+# The beacon-dev password, one of two ways. password_file wins when both are
+# set. Neither => the client refuses to start (fails closed).
+password = ""
+password_file = "~/.config/beacon/device.pw"     # chmod 600, one line
+keepalive_secs = 60
+
+[device]
+name = "pi"        # subscribes to beacon/all/trigger and beacon/<name>/trigger
+gpio = 26                # BCM number; 26 is physical pin 37
+active_high = true       # LED + series resistor from the pin to ground (pin 39)
+pattern = "blink"        # the [patterns] entry a trigger plays
+stale_secs = 300         # drop a trigger whose ts is older than this (README rule)
+
+[patterns]
+# name = { steps = [[on_ms, off_ms], ...], repeat = N }. These three are the
+# built-in defaults; listing a name here overrides it, a new name adds one.
+# Try one without the broker:  python3 -m beacon_client --test-fire --pattern slow
+blink  = { steps = [[250, 250]], repeat = 12 }
+double = { steps = [[120, 120], [120, 700]], repeat = 6 }
+slow   = { steps = [[1500, 1500]], repeat = 3 }
