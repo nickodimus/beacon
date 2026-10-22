@@ -19,6 +19,11 @@ DEFAULT_CONFIG_PATH = os.path.join(
     "beacon", "device.toml")
 
 MAX_PATTERN_MS = 60_000     # one step on or off longer than this is a typo
+# FLASH-RATE SAFETY. A lit step's on+off period may not be shorter than this,
+# which caps any pattern at 2 flashes per second. Fire strobes run 1-2 Hz, the
+# WCAG limit is 3 flashes/s, and the Epilepsy Foundation flags 3-60 Hz. The
+# loader refuses a faster pattern (fails closed) rather than playing it.
+MIN_PERIOD_MS = 500
 
 
 class ConfigError(Exception):
@@ -41,7 +46,7 @@ class Pattern:
 # or adds new ones; the config's `pattern` key picks which one a trigger plays.
 BUILTIN_PATTERNS = {
     "blink":  Pattern("blink",  ((250, 250),), 12),             # steady blink, 6 s
-    "double": Pattern("double", ((120, 120), (120, 700)), 6),   # double pulse, ~6 s
+    "double": Pattern("double", ((250, 250), (250, 1250)), 4),  # double pulse, 8 s
     "slow":   Pattern("slow",   ((1500, 1500),), 3),            # long slow pulse, 9 s
 }
 
@@ -85,12 +90,21 @@ def parse_pattern(name, spec):
                 or not all(0 <= v <= MAX_PATTERN_MS for v in step)):
             raise ConfigError(f"pattern {name!r}: each step is [on_ms, off_ms], "
                               f"integers 0..{MAX_PATTERN_MS}; got {step!r}")
+        if step[0] and step[0] + step[1] < MIN_PERIOD_MS:
+            raise ConfigError(f"pattern {name!r}: step {step!r} flashes faster than "
+                              f"{1000 // MIN_PERIOD_MS} Hz (on_ms + off_ms must be >= "
+                              f"{MIN_PERIOD_MS}); refusing, see MIN_PERIOD_MS")
         out.append((step[0], step[1]))
     if not isinstance(repeat, int) or isinstance(repeat, bool) or repeat < 1:
         raise ConfigError(f"pattern {name!r}: repeat must be an integer >= 1")
     if not any(on for on, _ in out):
         raise ConfigError(f"pattern {name!r}: every on_ms is 0; the LED would never light")
     return Pattern(name, tuple(out), repeat)
+
+
+# The shipped patterns must pass their own rule; a typo here fails at import.
+for _name, _p in BUILTIN_PATTERNS.items():
+    parse_pattern(_name, {"steps": [list(s) for s in _p.steps], "repeat": _p.repeat})
 
 
 def _password(mqtt):
