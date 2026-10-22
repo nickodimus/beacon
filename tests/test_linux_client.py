@@ -37,10 +37,17 @@ class PatternParsing(unittest.TestCase):
         for p in config.BUILTIN_PATTERNS.values():
             self.assertGreater(p.duration_ms, 0)
 
+    def test_flash_rate_cap_boundary(self):
+        config.parse_pattern("edge", {"steps": [[250, 250]], "repeat": 1})   # exactly 2 Hz
+        config.parse_pattern("gap", {"steps": [[600, 0], [0, 100]], "repeat": 1})  # unlit step exempt
+        for p in config.BUILTIN_PATTERNS.values():
+            for on, off in p.steps:
+                self.assertTrue(on == 0 or on + off >= config.MIN_PERIOD_MS, p.name)
+
     def test_parse_good(self):
-        p = config.parse_pattern("x", {"steps": [[100, 200], [300, 400]], "repeat": 2})
-        self.assertEqual(p.steps, ((100, 200), (300, 400)))
-        self.assertEqual(p.duration_ms, 2000)
+        p = config.parse_pattern("x", {"steps": [[100, 400], [300, 400]], "repeat": 2})
+        self.assertEqual(p.steps, ((100, 400), (300, 400)))
+        self.assertEqual(p.duration_ms, 2400)
 
     def test_parse_bad(self):
         bad = [
@@ -49,6 +56,8 @@ class PatternParsing(unittest.TestCase):
             {"steps": [[100, -1]], "repeat": 1},
             {"steps": [[100, 100]], "repeat": 0},
             {"steps": [[0, 100]], "repeat": 3},          # never lights
+            {"steps": [[120, 120]], "repeat": 1},        # 4 Hz, over the cap
+            {"steps": [[500, 500], [100, 399]], "repeat": 1},   # one fast step
             {"steps": [[100, 100.5]], "repeat": 1},
             {"steps": [[True, 100]], "repeat": 1},
             "notatable",
@@ -94,10 +103,10 @@ class ConfigLoading(unittest.TestCase):
 
     def test_pattern_override_and_unknown(self):
         path = self._write('[mqtt]\nhost = "h"\npassword = "x"\n[device]\nname = "t"\npattern = "mine"\n'
-                           '[patterns]\nmine = { steps = [[50, 50]], repeat = 2 }\n'
-                           'blink = { steps = [[10, 10]], repeat = 1 }\n')
+                           '[patterns]\nmine = { steps = [[300, 300]], repeat = 2 }\n'
+                           'blink = { steps = [[400, 400]], repeat = 1 }\n')
         cfg = config.load(path)
-        self.assertEqual(cfg.active_pattern.steps, ((50, 50),))
+        self.assertEqual(cfg.active_pattern.steps, ((300, 300),))
         self.assertEqual(cfg.patterns["blink"].repeat, 1)
         self.assertIn("slow", cfg.patterns)
         path = self._write('[mqtt]\nhost = "h"\npassword = "x"\n[device]\nname = "t"\npattern = "nope"\n')

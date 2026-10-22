@@ -228,8 +228,12 @@ QoS 1, PUBACK, PINGREQ at half the keepalive, reconnect forever with 1 s -> 60 s
 | `[device] stale_secs` | 300 | the `ts` rule from chunk 1, see below |
 | `[patterns] <name>` | three built in | `{ steps = [[on_ms, off_ms], ...], repeat = N }` |
 
-Built-in patterns: `blink` (250/250 x12, 6 s), `double` (120/120, 120/700 x6), `slow`
+Built-in patterns: `blink` (250/250 x12, 6 s), `double` (250/250, 250/1250 x4, 8 s), `slow`
 (1500/1500 x3). A config entry with the same name overrides; a new name adds.
+
+**Flash-rate cap.** A lit step must have `on_ms + off_ms >= 500`, so no pattern flashes
+faster than 2 per second (fire strobes run 1-2 Hz, WCAG caps at 3/s, the Epilepsy
+Foundation flags 3-60 Hz). The loader refuses a faster pattern and names the step.
 
 ### Behaviour
 
@@ -327,9 +331,7 @@ per-device topic the same way.
 - Public-readiness: this README is still a lab notebook. A manual-style rewrite with a
   flow diagram is its own chunk.
 - From an accessible-notifier recon (notes, gitignored):
-  - Flash-rate safety: keep every pattern at or under 2 Hz (fire strobes 1-2 Hz, WCAG
-    cap 3/s, Epilepsy Foundation flags 3-60 Hz). The built-in `double` pattern
-    (120/120 ms) touches ~4 Hz; re-time it. Never flash the red PWR LED alone.
+  - Never flash the red PWR LED alone (the 2 Hz cap itself is enforced since 2026-10-22).
   - Acknowledge model, informed by the field: sticky-until-cleared, a physical button
     that publishes an MQTT clear, plus a timeout failsafe. Needs a `write
     beacon/+/status` ACL line on the hub.
