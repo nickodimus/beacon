@@ -1,5 +1,5 @@
 # /etc/mosquitto/beacon.passwd — SHAPE ONLY. Never commit a real one.
-# Create it on hub with mosquitto_passwd, which prompts for each password
+# Create it on the hub with mosquitto_passwd, which prompts for each password
 # and writes a salted hash (mosquitto 2.x uses $7$ PBKDF2-SHA512):
 #
 #   sudo mosquitto_passwd -c /etc/mosquitto/beacon.passwd beacon-svc   # -c creates the file
@@ -7,8 +7,8 @@
 #   sudo chown root:mosquitto /etc/mosquitto/beacon.passwd && sudo chmod 640 /etc/mosquitto/beacon.passwd
 #
 # beacon-svc's password goes into ~/.config/beacon/config.toml [mqtt] password.
-# beacon-dev's password goes into the device provisioning (chunk 3) and
-# tools/watch.py on workstation.
+# beacon-dev's password goes into the device provisioning (chunk 3), the
+# Linux client's device.toml (chunk 5) and tools/watch.py on a workstation.
 #
 # The resulting file looks like (hashes here are fake):
 beacon-svc:$7$101$FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE==

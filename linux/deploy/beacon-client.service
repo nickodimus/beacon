@@ -1,7 +1,7 @@
-# systemd USER unit — installs and runs as sky, no sudo:
+# systemd USER unit — installs and runs as the ordinary user, no sudo:
 #   systemctl --user enable --now ~/beacon/linux/deploy/beacon-client.service
 # It only outlives the last login once lingering is on (one sudo line):
-#   sudo loginctl enable-linger USER
+#   sudo loginctl enable-linger $USER
 [Unit]
 Description=beacon client — flashes the LED when a Signal trigger arrives
 Documentation=file:%h/beacon/README.md

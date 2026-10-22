@@ -67,7 +67,7 @@ class ConfigLoading(unittest.TestCase):
         return path
 
     def test_fails_closed_without_password(self):
-        path = self._write('[device]\nname = "t"\n')
+        path = self._write('[mqtt]\nhost = "h"\n[device]\nname = "t"\n')
         with self.assertRaises(config.ConfigError):
             config.load(path)
         cfg = config.load(path, require_password=False)   # --test-fire path
@@ -75,33 +75,38 @@ class ConfigLoading(unittest.TestCase):
 
     def test_password_file_wins_and_is_hidden_from_repr(self):
         pw = self._write("s3cret\n")
-        path = self._write(f'[mqtt]\npassword = "inline"\npassword_file = "{pw}"\n'
+        path = self._write(f'[mqtt]\nhost = "h"\npassword = "inline"\npassword_file = "{pw}"\n'
                            '[device]\nname = "t"\n')
         cfg = config.load(path)
         self.assertEqual(cfg.mqtt_password, "s3cret")
         self.assertNotIn("s3cret", repr(cfg))
         self.assertNotIn("inline", repr(cfg))
 
+    def test_missing_host_is_an_error(self):
+        path = self._write('[mqtt]\npassword = "x"\n[device]\nname = "t"\n')
+        with self.assertRaises(config.ConfigError):
+            config.load(path)
+
     def test_missing_password_file_is_an_error(self):
-        path = self._write('[mqtt]\npassword_file = "/nonexistent/pw"\n[device]\nname = "t"\n')
+        path = self._write('[mqtt]\nhost = "h"\npassword_file = "/nonexistent/pw"\n[device]\nname = "t"\n')
         with self.assertRaises(config.ConfigError):
             config.load(path)
 
     def test_pattern_override_and_unknown(self):
-        path = self._write('[mqtt]\npassword = "x"\n[device]\nname = "t"\npattern = "mine"\n'
+        path = self._write('[mqtt]\nhost = "h"\npassword = "x"\n[device]\nname = "t"\npattern = "mine"\n'
                            '[patterns]\nmine = { steps = [[50, 50]], repeat = 2 }\n'
                            'blink = { steps = [[10, 10]], repeat = 1 }\n')
         cfg = config.load(path)
         self.assertEqual(cfg.active_pattern.steps, ((50, 50),))
         self.assertEqual(cfg.patterns["blink"].repeat, 1)
         self.assertIn("slow", cfg.patterns)
-        path = self._write('[mqtt]\npassword = "x"\n[device]\nname = "t"\npattern = "nope"\n')
+        path = self._write('[mqtt]\nhost = "h"\npassword = "x"\n[device]\nname = "t"\npattern = "nope"\n')
         with self.assertRaises(config.ConfigError):
             config.load(path)
 
     def test_device_name_validated(self):
         for name in ("", "Has/Slash", "UPPER", "a" * 33):
-            path = self._write(f'[mqtt]\npassword = "x"\n[device]\nname = "{name}"\n')
+            path = self._write(f'[mqtt]\nhost = "h"\npassword = "x"\n[device]\nname = "{name}"\n')
             with self.assertRaises(config.ConfigError, msg=name):
                 config.load(path)
 
@@ -188,10 +193,10 @@ class Packets(unittest.TestCase):
 
     def test_parse_publish_qos1_retained(self):
         payload = b'{"source":"signal","ts":1}'
-        body = mqtt._str("beacon/pi/trigger") + struct.pack("!H", 42) + payload
+        body = mqtt._str("beacon/studio/trigger") + struct.pack("!H", 42) + payload
         msg, pid = mqtt.parse_publish(0x33, body)   # PUBLISH, QoS 1, retain
         self.assertEqual((msg.topic, msg.payload, msg.retained, msg.qos, pid),
-                         ("beacon/pi/trigger", payload, True, 1, 42))
+                         ("beacon/studio/trigger", payload, True, 1, 42))
 
     def test_subscribe_packet_and_puback(self):
         a, b = socket.socketpair()
@@ -269,13 +274,13 @@ class SysfsOutput(unittest.TestCase):
         d = tempfile.mkdtemp()
         path = os.path.join(d, "device.toml")
         with open(path, "w") as fh:
-            fh.write('[device]\nname = "t"\nled = "ACT"\n')
+            fh.write('[mqtt]\nhost = "h"\n[device]\nname = "t"\nled = "ACT"\n')
         cfg = config.load(path, require_password=False)
         self.assertEqual(cfg.led, "ACT")
         with open(path, "w") as fh:
-            fh.write('[device]\nname = "t"\nled = "../etc"\n')
+            fh.write('[mqtt]\nhost = "h"\n[device]\nname = "t"\nled = "../etc"\n')
         with self.assertRaises(config.ConfigError):
             config.load(path, require_password=False)
         with open(path, "w") as fh:
-            fh.write('[device]\nname = "t"\n')
+            fh.write('[mqtt]\nhost = "h"\n[device]\nname = "t"\n')
         self.assertEqual(config.load(path, require_password=False).led, "")

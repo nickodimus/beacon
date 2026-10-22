@@ -45,8 +45,7 @@ if not cfg.has_token:
 
 # ------------------------------------------------------------------ auth
 def require_token(request: Request):
-    """Bearer auth. Constant-time compare; no part of the token is logged.
-    Same shape as mailroom so both services refuse the same way."""
+    """Bearer auth. Constant-time compare; no part of the token is logged."""
     if not cfg.has_token:
         log.error("refused %s %s — api_token is not configured",
                   request.method, request.url.path)

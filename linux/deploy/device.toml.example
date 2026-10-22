@@ -3,7 +3,7 @@
 # Never commit a filled-in copy; the password never reaches a log line.
 
 [mqtt]
-host = "192.0.2.10"
+host = "192.0.2.10"       # the hub's LAN address or name (required)
 port = 1883
 user = "beacon-dev"
 # The beacon-dev password, one of two ways. password_file wins when both are
@@ -13,7 +13,7 @@ password_file = "~/.config/beacon/device.pw"     # chmod 600, one line
 keepalive_secs = 60
 
 [device]
-name = "pi"        # subscribes to beacon/all/trigger and beacon/<name>/trigger
+name = "studio"          # subscribes to beacon/all/trigger and beacon/<name>/trigger
 gpio = 26                # BCM number; 26 is physical pin 37
 active_high = true       # LED + series resistor from the pin to ground (pin 39)
 led = ""                 # "" drives the GPIO above. "ACT" (green) or "PWR" (red) drives

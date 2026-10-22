@@ -1,8 +1,6 @@
 """Logging to stdout; systemd captures it into journald (LogNamespace=beacon).
 
-No timestamp in the format — journald stamps every line already. This is
-mailroom's logger with the name changed; one mental model for all three
-scoped services on hub.
+No timestamp in the format — journald stamps every line already.
 """
 
 import logging

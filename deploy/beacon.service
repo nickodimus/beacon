@@ -1,3 +1,5 @@
+# System unit. USER is a placeholder for the account that owns ~/beacon;
+# install with:  sed "s/USER/$USER/g" deploy/beacon.service | sudo tee /etc/systemd/system/beacon.service
 [Unit]
 Description=beacon — visual message notifier trigger API (phone -> MQTT)
 Documentation=file:/home/USER/beacon/README.md
@@ -15,7 +17,7 @@ RestartSec=10
 TimeoutStopSec=15
 LogNamespace=beacon
 
-# Hardening — mirrors mailroom. beacon writes nothing to disk (it logs to
+# Hardening. beacon writes nothing to disk (it logs to
 # journald and talks to mosquitto on loopback). Its config lives under
 # /home/USER/.config/beacon, which ProtectHome=read-only still lets it read.
 NoNewPrivileges=true
