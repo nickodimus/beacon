@@ -17,8 +17,9 @@ hub's LAN address. Keep the real names in an untracked `notes/site.md`.
 ## Chunks (one branch each)
 
 1. `hub/` — beacon service, Mosquitto LAN listener + password file + ACL, Apache location.
-2. `device/` — MicroPython: Microdot UI (pattern editor, test fire, status), MQTT subscriber,
-   pattern engine, NeoPixel driver, test-fire button, acknowledge stub, config.json.
+2. `device/` — MicroPython: Microdot UI (pattern editor, test fire, status), pattern engine,
+   NeoPixel driver, test-fire button, acknowledge stub, config.json. Two front doors in one
+   build, chosen by config: see "Chunk 2 — device design" below.
 3. `flasher/` — Tkinter GUI: board detection, firmware stage (esptool / UF2 copy), app upload,
    provisioning (WiFi, MQTT user/pass, token).
 4. `docs/` — phone recipe: [docs/phone.md](docs/phone.md) (MacroDroid first, Tasker alternative), backlog.
@@ -28,6 +29,24 @@ hub's LAN address. Keep the real names in an untracked `notes/site.md`.
 7. `linux/` onboard LED — the Pi client can blink the board's ACT or PWR LED, no wiring.
 8. sanitize — hostnames, addresses and paths replaced by roles and placeholders so the
    repo can be published.
+
+## Chunk 2 — device design (decided before the build)
+
+One firmware, two front doors, selected in `config.json`. Same pattern engine, same
+config shape, same test-fire, same acknowledge stub in both.
+
+- **Hub mode** subscribes to the broker exactly as the Linux client does: topics
+  `beacon/all/trigger` and `beacon/<name>/trigger`, QoS 1, clean session, the `ts`
+  staleness rule, the same `{ steps, repeat }` pattern format.
+- **Standalone mode** serves `POST /trigger` on the device itself, with the same bearer
+  check and body contract as the hub service (`{"source": ..., "device": ...}`, 401 / 422 /
+  429 the same way), so a phone macro can point at the box directly with no hub at all.
+
+Standalone trust model: LAN only, plain HTTP, and a per-unit token generated on the box
+at first boot and shown once in the Microdot UI. TLS is deliberately not part of this:
+a self-signed certificate on a LAN box is only worth having when a custom phone app can
+pin it from a pairing QR, and that app is not v1. This is the reason TLS is absent, not a
+TODO to add it.
 
 ## Chunk 1 — hub side
 
