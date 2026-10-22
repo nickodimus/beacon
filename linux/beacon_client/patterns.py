@@ -21,7 +21,7 @@ def acknowledge(pattern):
     timeout vs physical button vs phone clear) plugs in here. When it exists
     it probably wants to (a) hold the LED on or dim until acknowledged
     instead of ending, and (b) publish to a status topic, which needs a
-    `write beacon/+/status` ACL line on hub (chunk 1 territory).
+    `write beacon/+/status` ACL line on the hub (chunk 1 territory).
     """
     log.debug("pattern %s ended (acknowledge stub)", pattern.name)
 

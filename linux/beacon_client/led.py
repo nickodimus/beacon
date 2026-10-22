@@ -14,7 +14,7 @@ SYSFS_LEDS = "/sys/class/leds"
 
 
 def open_led(gpio, active_high):
-    """The pin. gpiozero's LED on a BCM number; lgpio is the backend on pi."""
+    """The pin. gpiozero's LED on a BCM number; lgpio is the usual backend."""
     try:
         from gpiozero import LED
     except ImportError as exc:

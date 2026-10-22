@@ -2,7 +2,7 @@
 Type=Application
 Name=beacon fire
 Comment=Fire the beacon trigger (no terminal)
-Exec=python3 /home/USER/beacon/tools/fire_gui.py
+Exec=python3 FIRE_GUI_PATH
 Icon=preferences-system-notifications
 Terminal=false
 Categories=Utility;

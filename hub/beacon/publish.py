@@ -6,7 +6,7 @@ few per minute at most, and the service caps it anyway. Every wait has a
 timeout so a dead broker turns into a 502, not a hung request.
 
 NOT RETAINED. See README "Retain decision": a device that boots after a
-trigger must not fire for a message Sky may have read an hour ago.
+trigger must not fire for a message the owner may have read an hour ago.
 
 Caveat: under MQTT 3.1.1 mosquitto PUBACKs a publish the ACL denies, so a
 clean return here proves the broker ACCEPTED the message, not that a

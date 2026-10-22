@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Watch beacon triggers from workstation (or any LAN host). Stdlib only.
+"""Watch beacon triggers from any LAN host. Stdlib only.
 
-workstation has neither mosquitto_sub nor paho, and the proof of concept needs a
-subscriber there, so this is a minimal MQTT 3.1.1 client: CONNECT with
+A workstation may have neither mosquitto_sub nor paho, and the proof of
+concept needs a subscriber there, so this is a minimal MQTT 3.1.1 client: CONNECT with
 username/password, SUBSCRIBE at QoS 1, print every PUBLISH, PUBACK it,
 keep the connection alive. It is a window, not a library: the device
 firmware (chunk 2) uses umqtt, not this.
 
-    python3 tools/watch.py --password-file ~/.config/beacon/device.pw
-    BEACON_MQTT_PASSWORD=... python3 tools/watch.py --count 1
+    python3 tools/watch.py --host 192.0.2.10 --password-file ~/.config/beacon/device.pw
+    BEACON_MQTT_PASSWORD=... python3 tools/watch.py --host 192.0.2.10 --count 1
 
-Defaults: host 192.0.2.10, port 1883, user beacon-dev, topic beacon/#.
+--host is the hub's LAN address. Defaults: port 1883, user beacon-dev, topic beacon/#.
 The password is read from --password-file or BEACON_MQTT_PASSWORD; it is
 never taken on the command line, so it never shows in `ps`.
 
 If mosquitto_sub is installed, this one-liner does the same:
-    mosquitto_sub -h 192.0.2.10 -u beacon-dev -P '<pw>' -t 'beacon/#' -q 1 -v
+    mosquitto_sub -h <hub-ip> -u beacon-dev -P '<pw>' -t 'beacon/#' -q 1 -v
 """
 
 import argparse
@@ -103,7 +103,7 @@ def subscribe(sock, topic, pid=1):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--host", default="192.0.2.10")
+    ap.add_argument("--host", required=True, help="the hub's LAN address or name")
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--user", default="beacon-dev")
     ap.add_argument("--password-file", help="file holding the beacon-dev password")

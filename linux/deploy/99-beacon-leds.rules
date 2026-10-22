@@ -1,6 +1,6 @@
 # /etc/udev/rules.d/99-beacon-leds.rules — beacon chunk 7
 # Let the gpio group drive the Pi's onboard LEDs (ACT green, PWR red) so the
-# beacon client can blink one as sky with no sudo at runtime. Only the two
+# beacon client can blink one as an ordinary user with no sudo at runtime. Only the two
 # files the client writes change hands; max_brightness stays read-only.
 # Install once:  sudo install -m644 ~/beacon/linux/deploy/99-beacon-leds.rules /etc/udev/rules.d/
 #                sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=leds

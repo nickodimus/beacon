@@ -1,5 +1,5 @@
-# beacon config — copy to ~/.config/beacon/config.toml on hub, chmod 600,
-# owned by sky (the service runs as sky). BEACON_CONFIG overrides the path.
+# beacon config — copy to ~/.config/beacon/config.toml on the hub, chmod 600,
+# owned by the user the service runs as. BEACON_CONFIG overrides the path.
 # Both secrets below are set by hand on the box. Never commit a filled-in
 # copy of this file, and never let either value reach a log line.
 

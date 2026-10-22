@@ -1,9 +1,9 @@
 """Config loading. Everything tunable lives out of source.
 
-Default path is ~/.config/beacon/config.toml (sky-owned, chmod 600).
-mailroom and charity keep theirs under /etc/<name>/, also sky-owned; beacon
-differs so the whole sky-side deploy (clone, venv, config) needs no sudo.
-BEACON_CONFIG overrides the path.
+Default path is ~/.config/beacon/config.toml, owned by the service user,
+chmod 600. It lives in the home directory rather than /etc so the whole
+user-side deploy (clone, venv, config) needs no sudo. BEACON_CONFIG
+overrides the path.
 
 The API token is read from here and is NEVER logged: repr=False on the
 field means logging a Config object, or a stack trace that includes one,

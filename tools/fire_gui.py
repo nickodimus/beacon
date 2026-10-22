@@ -9,9 +9,12 @@ reply line reach the window.
 Launch: python3 tools/fire_gui.py, or "beacon fire" in the app menu
 (tools/beacon-fire.desktop, installed by tools/install-fire-gui.sh).
 
-Environment overrides, for a test server or a moved token file:
-  BEACON_URL         default https://<api-host>/beacon/trigger
+The endpoint URL is read from ~/.config/beacon/api.url (one line, e.g.
+https://api.example.com/beacon/trigger). Environment overrides, for a test
+server or moved files:
+  BEACON_URL         the endpoint; wins over api.url
   BEACON_TOKEN_FILE  default ~/.config/beacon/api.token
+  BEACON_URL_FILE    default ~/.config/beacon/api.url
 """
 import json
 import os
@@ -22,19 +25,28 @@ import urllib.error
 import urllib.request
 from tkinter import ttk
 
-URL = os.environ.get("BEACON_URL", "https://<api-host>/beacon/trigger")
 TOKEN_PATH = os.path.expanduser(
     os.environ.get("BEACON_TOKEN_FILE", "~/.config/beacon/api.token"))
-DEVICES = ("all", "pi")
+URL_PATH = os.path.expanduser(
+    os.environ.get("BEACON_URL_FILE", "~/.config/beacon/api.url"))
+DEVICES = ("all",)          # editable: type any device name
 SOURCES = ("signal", "test")
 
 
-def read_token():
+def _read_line(path):
     try:
-        with open(TOKEN_PATH) as fh:
+        with open(path) as fh:
             return fh.read().strip()
     except OSError:
         return ""
+
+
+def read_token():
+    return _read_line(TOKEN_PATH)
+
+
+def read_url():
+    return os.environ.get("BEACON_URL") or _read_line(URL_PATH)
 
 
 def fire(source, device):
@@ -46,9 +58,12 @@ def fire(source, device):
     token = read_token()
     if not token:
         return 0, f"no token at {TOKEN_PATH}"
+    url = read_url()
+    if not url:
+        return 0, f"no endpoint URL at {URL_PATH} (or BEACON_URL)"
     body = json.dumps({"source": source, "device": device}).encode()
     req = urllib.request.Request(
-        URL, data=body, method="POST",
+        url, data=body, method="POST",
         headers={"Authorization": f"Bearer {token}",
                  "Content-Type": "application/json"})
     try:
@@ -88,7 +103,7 @@ class FireWindow(tk.Tk):
         ttk.Label(top, text="device").grid(row=0, column=0, sticky="w")
         self.device = tk.StringVar(value=DEVICES[0])
         ttk.Combobox(top, textvariable=self.device, values=DEVICES,
-                     width=12, state="readonly").grid(row=0, column=1, padx=(6, 18))
+                     width=12).grid(row=0, column=1, padx=(6, 18))
         ttk.Label(top, text="source").grid(row=0, column=2, sticky="w")
         self.source = tk.StringVar(value=SOURCES[0])
         ttk.Combobox(top, textvariable=self.source, values=SOURCES,
@@ -101,7 +116,8 @@ class FireWindow(tk.Tk):
         self.button.grid(row=1, column=0, **pad)
 
         self.status = tk.StringVar(value=f"token file: {TOKEN_PATH}"
-                                   + ("" if read_token() else "  (missing)"))
+                                   + ("" if read_token() else "  (missing)")
+                                   + ("" if read_url() else f"   no URL at {URL_PATH}"))
         ttk.Label(self, textvariable=self.status).grid(row=2, column=0, sticky="w", **pad)
 
         self.log = tk.Text(self, height=8, width=56, state="disabled",

@@ -53,7 +53,7 @@ One macro: Trigger → Action → two settings.
 
 1. Request path first, no notification needed. MacroDroid: macro editor menu → **Test
    actions**. Tasker: the play button in the task editor. Expect 200 and, if the device or
-   `tools/watch.py` on workstation is subscribed, one flash / one line.
+   `tools/watch.py` on the workstation is subscribed, one flash / one line.
 2. Trigger path with a dummy notification. MacroDroid: temporarily switch the trigger to
    **Any Application**, start a 10-second timer in the Clock app, confirm the fire, switch
    back to Signal. Tasker: clear **Owner Application** for the same test. Tasker never
@@ -73,17 +73,17 @@ Nothing from the message (sender, body) is sent anywhere; the body is a constant
 The token lives in the automation app's HTTP header field and nowhere else on the phone:
 not in a variable, not in the macro name, not in a backup you share. MacroDroid exports
 include it in clear, so do not upload the macro to the Template Store. The same value
-sits in `~/.config/beacon/config.toml` on hub and `~/.config/beacon/api.token` on
-workstation; if it rotates, update the phone header by hand.
+sits in `~/.config/beacon/config.toml` on the hub and `~/.config/beacon/api.token` on
+the workstation; if it rotates, update the phone header by hand.
 
 ## Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
-| 401 | Header is `Authorization: Bearer <token>`, exactly one space, no quotes, token not stale. 503 = hub's config has an empty token. |
+| 401 | Header is `Authorization: Bearer <token>`, exactly one space, no quotes, token not stale. 503 = the hub's config has an empty token. |
 | 429 | More than 12 triggers in a minute (`max_per_min`). A Signal group burst can do it; the next minute clears. Not a phone fault. |
 | 422 | Body is not `{"source":"signal"}` or content type is not JSON. |
 | No request logged | No Wi-Fi: the endpoint is public HTTPS, so mobile data also works, but a Wi-Fi constraint (step 4) silently skips. Check the MacroDroid System Log / Tasker Run Log. |
 | Fires once, then never | Battery saver or OEM killer. Redo the battery step; check Troubleshooting → Issues Identified; dontkillmyapp.com. |
 | Nothing fires at all | Notification Access revoked (Android auto-revokes unused-app permissions). Re-grant. On Android 15+ "Enhanced notifications" can withhold some content, but the fire still happens. |
-| 200 but no flash | Phone side is done. Look at the broker/device: `tools/watch.py` on workstation, chunk 1 README. |
+| 200 but no flash | Phone side is done. Look at the broker/device: `tools/watch.py` on the workstation, chunk 1 README. |

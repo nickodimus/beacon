@@ -129,6 +129,10 @@ def load(path=None, require_password=True):
     for name, spec in raw.get("patterns", {}).items():
         patterns[name] = parse_pattern(name, spec)
 
+    mqtt_host = str(mqtt.get("host", "")).strip()
+    if not mqtt_host:
+        raise ConfigError("[mqtt] host is required: the hub's LAN address or name")
+
     password = _password(mqtt)
     if require_password and not password:
         raise ConfigError(
@@ -154,7 +158,7 @@ def load(path=None, require_password=True):
                           "(a directory under /sys/class/leds), or empty for the GPIO")
 
     return Config(
-        mqtt_host=str(mqtt.get("host", "192.0.2.10")),
+        mqtt_host=mqtt_host,
         mqtt_port=int(mqtt.get("port", 1883)),
         mqtt_user=str(mqtt.get("user", "beacon-dev")).strip(),
         mqtt_password=password,
